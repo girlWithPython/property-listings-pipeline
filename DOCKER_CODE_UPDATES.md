@@ -171,12 +171,12 @@ touch search_config.json
 {
   "search_urls": [
     {
-      "url": "https://www.rightmove.co.uk/property-for-sale/find.html?...",
+      "url": "https://example.com/listing/?...",
       "enabled": true,
       "description": "Guildford - 3+ beds, max £400k"
     },
     {
-      "url": "https://www.rightmove.co.uk/...",
+      "url": "https://example.com/listing/?...",
       "enabled": false,
       "description": "Stevenage"
     }
@@ -333,7 +333,7 @@ docker-compose up -d celery_worker
 
 ```bash
 # View code inside container
-docker exec rightmove_worker cat /app/scraper/search_urls.py
+docker exec worker cat /app/scraper/search_urls.py
 
 # Compare with host file
 cat scraper/search_urls.py
@@ -345,7 +345,7 @@ cat scraper/search_urls.py
 
 ```bash
 # Check when container was created
-docker ps -a --filter name=rightmove_worker --format "table {{.CreatedAt}}\t{{.Names}}"
+docker ps -a --filter name=worker --format "table {{.CreatedAt}}\t{{.Names}}"
 ```
 
 If created time is **before** your code changes, container needs to be recreated.
@@ -379,7 +379,7 @@ docker-compose down celery_worker
 docker-compose up -d celery_worker
 
 echo "Checking logs..."
-docker logs rightmove_worker --tail 20
+docker logs worker --tail 20
 
 echo "Worker restarted successfully!"
 ```
@@ -454,7 +454,7 @@ Add to README.md:
 After modifying Python files:
 1. Rebuild: `docker-compose build celery_worker`
 2. Restart: `docker-compose down celery_worker && docker-compose up -d celery_worker`
-3. Verify: `docker logs rightmove_worker --tail 50`
+3. Verify: `docker logs worker --tail 50`
 ```
 
 ### 2. Git Hooks
@@ -475,7 +475,7 @@ Tag your images:
 # docker-compose.yml
 services:
   celery_worker:
-    image: rightmove_worker:${VERSION:-latest}
+    image: worker:${VERSION:-latest}
     build: .
 ```
 
@@ -535,10 +535,10 @@ docker-compose up -d celery_worker
 docker images | grep celery_worker
 
 # 2. Verify container is using new image
-docker ps -a | grep rightmove_worker
+docker ps -a | grep worker
 
 # 3. Check code in container
-docker exec rightmove_worker head -20 /app/scraper/search_urls.py
+docker exec worker head -20 /app/scraper/search_urls.py
 ```
 
 **Solution**: Make sure you used `down` + `up`, not just `restart`

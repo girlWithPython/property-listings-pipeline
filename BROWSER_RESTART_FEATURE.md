@@ -150,20 +150,20 @@ Total overhead: ~15 seconds
 
 **Normal scraping**:
 ```
-[1/252] Extracting: https://www.rightmove.co.uk/properties/12345
-[2/252] Extracting: https://www.rightmove.co.uk/properties/67890
+[1/252] Extracting: https://example.com/listing/<id>
+[2/252] Extracting: https://example.com/listing/<id>
 ...
 ```
 
 **Browser restart**:
 ```
-[75/252] Extracting: https://www.rightmove.co.uk/properties/99999
+[75/252] Extracting: https://example.com/listing/<id>
   [OK] New snapshot saved: 99999
 
 [BROWSER RESTART] Restarting browser after 75 properties (memory management)
 [BROWSER RESTART] Browser restarted successfully
 
-[76/252] Extracting: https://www.rightmove.co.uk/properties/11111
+[76/252] Extracting: https://example.com/listing/<id>
 ...
 ```
 
@@ -244,7 +244,7 @@ docker-compose restart celery_worker
 
 Check logs for restart messages:
 ```bash
-docker logs rightmove_worker --follow | grep "BROWSER RESTART"
+docker logs worker --follow | grep "BROWSER RESTART"
 ```
 
 ---

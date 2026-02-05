@@ -38,7 +38,7 @@ This directory contains Celery-based background workers for asynchronous task pr
 
 ### 1. Scraper Worker (`scraper_tasks.py`)
 - **Queue:** `scraper`
-- **Purpose:** Run Rightmove property scraping in Docker (headless mode)
+- **Purpose:** Run property scraping in Docker (headless mode)
 - **Tasks:**
   - `run_scraper`: Scrape all enabled URLs, automatically triggers geocoding
   - `schedule_scraper`: Periodic task for Celery Beat
@@ -93,7 +93,7 @@ This directory contains Celery-based background workers for asynchronous task pr
 docker-compose up -d
 
 # Check worker logs
-docker logs rightmove_worker --follow
+docker logs worker --follow
 
 # Rebuild worker after code changes
 docker-compose build celery_worker
@@ -125,7 +125,7 @@ python trigger_scraper.py
 python trigger_scraper.py --status <task_id>
 
 # Monitor logs
-docker logs rightmove_worker --follow
+docker logs worker --follow
 ```
 
 ### Trigger Geocoding
@@ -166,7 +166,7 @@ python purge_celery_tasks.py
 # Database
 DB_HOST=postgres
 DB_PORT=5432
-DB_NAME=rightmove_scraper
+DB_NAME=scraper
 DB_USER=postgres
 DB_PASSWORD=postgres
 
@@ -179,14 +179,14 @@ SMTP_PORT=587
 SMTP_USERNAME=your.email@gmail.com
 SMTP_PASSWORD=your_16_char_app_password
 SMTP_USE_TLS=true
-FROM_NAME=Rightmove Property Scraper
+FROM_NAME= third-party property listing portal Property Scraper
 NOTIFICATION_EMAILS=recipient1@example.com,recipient2@example.com
 
 # MinIO
 MINIO_ENDPOINT=minio:9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
-MINIO_BUCKET_NAME=rightmove-images
+MINIO_BUCKET_NAME=images
 MINIO_SECURE=false
 ```
 
@@ -197,7 +197,7 @@ Edit `scraper/search_urls.py`:
 ```python
 SEARCH_URLS = [
     {
-        "url": "https://www.rightmove.co.uk/property-for-sale/find.html?...",
+        "url": "https://example.com/listing/?...",
         "enabled": True,
         "description": "Guildford - 3+ beds, max £400k"
     },
@@ -254,7 +254,7 @@ celery -A workers.celery_app inspect registered
 
 ```bash
 # Connect to Redis
-docker exec -it rightmove_redis redis-cli
+docker exec -it redis redis-cli
 
 # Check queue lengths
 LLEN scraper
@@ -269,14 +269,14 @@ KEYS *
 
 ```bash
 # Worker logs
-docker logs rightmove_worker --follow
+docker logs worker --follow
 
 # Last 100 lines
-docker logs rightmove_worker --tail 100
+docker logs worker --tail 100
 
 # Specific container
-docker logs rightmove_redis
-docker logs rightmove_minio
+docker logs redis
+docker logs minio
 ```
 
 ### Flower (Web UI)
@@ -302,7 +302,7 @@ docker ps | grep worker
 
 **Check worker logs:**
 ```bash
-docker logs rightmove_worker --tail 50
+docker logs worker --tail 50
 ```
 
 **Restart worker:**
@@ -323,11 +323,11 @@ docker-compose down celery_worker && docker-compose up -d celery_worker
 docker ps | grep redis
 
 # Test Redis connection
-docker exec rightmove_redis redis-cli ping
+docker exec redis redis-cli ping
 # Should return: PONG
 
 # Check Redis keys
-docker exec rightmove_redis redis-cli KEYS "*"
+docker exec redis redis-cli KEYS "*"
 ```
 
 ### Email Not Sending
@@ -345,7 +345,7 @@ docker exec rightmove_redis redis-cli KEYS "*"
 
 **Check logs:**
 ```bash
-docker logs rightmove_worker | grep EMAIL
+docker logs worker | grep EMAIL
 ```
 
 ### Scraper Issues

@@ -2,17 +2,16 @@
 
 ## Overview
 
-The Rightmove Property Scraper uses PostgreSQL with a **snapshot-based approach** to track property changes over time. This provides complete historical tracking without data loss.
+The Third-Party Property Listing Portal Scraper uses PostgreSQL with a **snapshot-based approach** to track property changes over time. This provides complete historical tracking without data loss.
 
 ## Prerequisites
 
 1. **Install PostgreSQL**
    - Download from: https://www.postgresql.org/download/
-   - Or use Docker: `docker run --name rightmove-db -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres`
-
+   - Or use Docker: `docker run --name -db -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres`
 2. **Create Database**
    ```sql
-   CREATE DATABASE rightmove_scraper;
+   CREATE DATABASE scraper;
    ```
 
 ## Configuration
@@ -22,7 +21,7 @@ Edit `.env` file in project root:
 ```bash
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=rightmove_scraper
+DB_NAME=scraper
 DB_USER=postgres
 DB_PASSWORD=your_password
 ```

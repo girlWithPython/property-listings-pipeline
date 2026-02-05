@@ -374,7 +374,7 @@ python trigger_geocoding.py
 ### 4. Monitor Logs
 
 ```bash
-docker logs rightmove_worker --tail 50 --follow
+docker logs worker --tail 50 --follow
 ```
 
 ---

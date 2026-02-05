@@ -239,7 +239,7 @@ def format_property_html(property_data: dict) -> str:
             <a href="{property_data['url']}"
                style="background-color: #0066cc; color: white; padding: 8px 16px;
                       text-decoration: none; border-radius: 3px; display: inline-block;">
-                View on Rightmove
+                View on the third-party property listing portal
             </a>
         </p>
     </div>
@@ -340,11 +340,11 @@ def send_new_snapshots_notification(minutes: int = 60):
             <p>{len(new_snapshots)} new properties added in the last {minutes} minutes</p>
         </div>
         <div class="content">
-            <p>Here are the latest property snapshots from your Rightmove scraper:</p>
+            <p>Here are the latest property snapshots from your scraper:</p>
             {properties_html}
         </div>
         <div class="footer">
-            <p>This is an automated notification from your Rightmove Property Scraper.</p>
+            <p>This is an automated notification from your Property Scraper.</p>
             <p>Generated at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
         </div>
     </body>

@@ -1,19 +1,91 @@
-# Rightmove Property Scraper
+# Property Listings Pipeline
 
-A comprehensive property scraping and monitoring system for Rightmove.co.uk with automated geocoding, email notifications, and hierarchical location data.
-
-## Features
-
-- **Multi-URL Scraping**: Process multiple search criteria simultaneously
-- **Snapshot-Based Tracking**: Historical price and status change tracking
-- **Automated Reverse Geocoding**: Convert coordinates to UK postcodes, counties, and localities using Postcodes.io API
-- **Email Notifications**: Automated alerts for new properties via SMTP (Outlook, Gmail, Yahoo)
-- **Hierarchical Places**: Normalized geographic data structure (County → Town → Locality → Postcode)
-- **Worker System**: Celery-based background task processing with Docker support
-- **Image Storage**: MinIO S3-compatible storage for property images
-- **Dual Coordinate System**: Rightmove approximate coordinates + precise postcode-based geocoding
+This project is an end-to-end **ELT pipeline** for property listing data: it extracts listing records from a third-party public portal, loads them into PostgreSQL, enriches them via external APIs, and produces **snapshoted, analytics-ready** tables for reporting and monitoring.
 
 ## Architecture
+
+**High-level flow**
+1. **Extract**: Collect listing metadata and media from configured search criteria (headless browser automation).
+2. **Load (Raw/Staging)**: Persist raw records and relationships into PostgreSQL with idempotent upserts.
+3. **Enrich (API Integrations)**: Call enrichment APIs (e.g., geocoding/postcode reference data) to standardise locations and improve spatial accuracy.
+4. **Snapshot & Change Detection**: Create point-in-time snapshots and compute deltas (new listings, price/status changes, time-on-market).
+5. **Notify**: Send alerts (SMTP / webhook-style integrations) for new or changed records based on configured rules.
+6. **Store Assets**: Save listing images to S3-compatible object storage (MinIO) with metadata links in Postgres.
+
+**Core components**
+- **Scraper service**: Extracts listing and media data per search criteria.
+- **Worker service (Celery)**: Executes extraction, enrichment, snapshotting, and notification jobs asynchronously.
+- **PostgreSQL**: Source-of-truth database with raw, curated, and snapshot tables.
+- **MinIO**: Object storage for images and artefacts.
+- **Scheduler**: Periodic runs (e.g., daily/hourly) via Celery Beat or external scheduling.
+
+**Data model (conceptual)**
+- `listings_raw` → `listings_curated`
+- `places` hierarchy (County → Town → Locality → Postcode)
+- `listing_snapshots` keyed by `run_timestamp` (enables longitudinal analysis)
+- `listing_events` (optional) for “what changed” records used by notifications
+
+### Tables & Lineage
+
+- **`listings_raw` (landing)** → stores source-aligned extracts with minimal transformations (append/upsert per run to keep ingestion idempotent).
+- **`listings_curated` (analytics-ready)** ← cleaned and standardised listing schema with typed fields, deduplicated keys, and derived attributes (e.g., `first_seen`, `last_seen`, `time_on_market`).
+- **`listing_events` / `listing_changes` (change-log fact table)** ← append-only history where **only detected deltas** are persisted per run (e.g., new listing, price/status updates, removed/expired). Timestamped by `run_timestamp`/`observed_at` to support change analytics and “as-of” state reconstruction.
+- **`places_*` / `postcode_lookup` (reference dimensions)** ← enriched via API integrations; normalised hierarchy (County → Town → Locality → Postcode) to ensure consistent joins, grouping, and geographic rollups.
+
+### API Integrations (Geocoding & Enrichment)
+
+The pipeline includes a dedicated enrichment step that standardises location data via external APIs, enabling consistent geographic joins and spatial analysis across **listings** and **sold-price (Land Registry) records**.
+
+- **Postcodes.io — reverse geocoding for listings**  
+  Listing records often contain approximate map coordinates from the source portal. We call the Postcodes.io reverse-geocoding endpoint to convert **latitude/longitude → postcode + locality + town + county** (and related administrative fields). The results are stored in lookup tables and used to populate the normalised `places_*` hierarchy for reliable grouping and rollups.
+
+- **OpenStreetMap Nominatim — forward geocoding for Land Registry addresses**  
+  For sold-price records where coordinates are not present, we use Nominatim (`https://nominatim.openstreetmap.org/search`) to translate **address text → latitude/longitude**. This enables spatial matching (e.g., proximity joins) between sold transactions and current listings, and supports map-based BI.
+
+To keep the pipeline robust and “data-platform friendly”, the enrichment layer is implemented with **caching/deduplication** (so the same postcode/address is not repeatedly geocoded), **rate limiting + retries/backoff**, and clear separation between **raw inputs** and **enriched reference dimensions**.
+
+### Configuration
+
+All services are containerised and configured via environment variables (recommended: `.env` file). The same configuration works for local runs and Docker Compose.
+
+**Required**
+- `DATABASE_URL` — PostgreSQL connection string
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` — outbound email configuration
+- `EMAIL_FROM`, `EMAIL_TO` — notification sender/recipient(s)
+
+**API integrations (optional but recommended)**
+- `POSTCODE_API_BASE_URL` — postcode/geocoding API endpoint (default can be set in code)
+- `POSTCODE_API_TIMEOUT_SECONDS` — request timeout / retry tuning
+- `ENRICHMENT_API_KEY` — if using a paid enrichment provider (leave empty if not required)
+
+**Storage**
+- `S3_ENDPOINT_URL` — MinIO/S3 endpoint
+- `S3_ACCESS_KEY`, `S3_SECRET_KEY`
+- `S3_BUCKET_NAME`
+
+**Workers / scheduling**
+- `CELERY_BROKER_URL` — Redis/RabbitMQ broker
+- `CELERY_RESULT_BACKEND` — optional result backend
+- `RUN_SCHEDULE` — cron-like schedule for periodic pipeline runs (if supported)
+
+**Example**
+```bash
+DATABASE_URL=postgresql+psycopg2://user:password@db:5432/property
+CELERY_BROKER_URL=redis://redis:6379/0
+
+SMTP_HOST=smtp.office365.com
+SMTP_PORT=587
+SMTP_USER=your@email
+SMTP_PASSWORD=your_password
+EMAIL_FROM=your@email
+EMAIL_TO=recipient@email
+
+S3_ENDPOINT_URL=http://minio:9000
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin
+S3_BUCKET_NAME=property-images
+
+POSTCODE_API_BASE_URL=https://api.postcodes.io
 
 ### System Overview
 
@@ -45,7 +117,7 @@ A comprehensive property scraping and monitoring system for Rightmove.co.uk with
 **properties** - Property snapshots (immutable history)
 ```sql
 - id (UUID, PK)
-- property_id (VARCHAR) - Rightmove property ID
+- property_id (VARCHAR) - property ID from third-party property listing portal
 - url (TEXT)
 - price (BIGINT)
 - full_address (TEXT)
@@ -58,7 +130,7 @@ A comprehensive property scraping and monitoring system for Rightmove.co.uk with
 - reduced_on (VARCHAR) - Date price was reduced
 - size (INTEGER) - Property size in sq ft or sq m (numeric value only)
 - council_tax_band (VARCHAR) - UK council tax band (A-H)
-- latitude (DECIMAL), longitude (DECIMAL) - Coordinates from Rightmove
+- latitude (DECIMAL), longitude (DECIMAL) - Coordinates from third-party property listing portal
 - minio_images (JSONB) - Array of image URLs in MinIO
 - created_at (TIMESTAMP) - Snapshot timestamp
 
@@ -279,12 +351,12 @@ Edit `scraper/search_urls.py`:
 ```python
 SEARCH_URLS = [
     {
-        "url": "https://www.rightmove.co.uk/property-for-sale/find.html?...",
+        "url": "https://example.com/listing/...",
         "enabled": True,
         "description": "Guildford - 3+ beds, max £400k"
     },
     {
-        "url": "https://www.rightmove.co.uk/property-to-rent/find.html?...",
+        "url": "https://example.com/listing/...",
         "enabled": True,
         "description": "Reading - Rentals"
     },
@@ -304,7 +376,7 @@ SMTP_PORT=587
 SMTP_USERNAME=your.email@gmail.com
 SMTP_PASSWORD=your_gmail_app_password  # 16-character App Password
 SMTP_USE_TLS=true
-FROM_NAME=Rightmove Property Scraper
+FROM_NAME=Property Listings Pipeline
 NOTIFICATION_EMAILS=recipient@gmail.com
 
 # Alternative: Outlook/Hotmail (no App Password needed)
@@ -343,7 +415,7 @@ python trigger_scraper.py
 python trigger_scraper.py --status <task_id>
 
 # Monitor logs
-docker logs rightmove_worker --follow
+docker logs worker --follow
 ```
 
 Automated workflow:
@@ -569,7 +641,7 @@ GET https://api.postcodes.io/postcodes?lat=51.3687&lon=-0.2757
 **No properties found**:
 - Check search URLs in `scraper/search_urls.py`
 - Verify at least one URL has `enabled: True`
-- Check Rightmove website is accessible
+- Check third-party property listing portal is accessible
 
 **Browser errors**:
 ```bash
@@ -591,7 +663,7 @@ DB_PORT=5432
 **Schema not initialized**:
 ```bash
 # Check if tables exist
-psql -U postgres -d rightmove_scraper -c "\dt"
+psql -U postgres -d scraper -c "\dt"
 
 # Reinitialize schema
 python -c "import asyncio; from db.database import DatabaseConnector; from db.config import DB_CONFIG; async def init(): db = DatabaseConnector(); await db.connect(**DB_CONFIG); await db.init_schema(); await db.disconnect(); asyncio.run(init())"
@@ -602,7 +674,7 @@ python -c "import asyncio; from db.database import DatabaseConnector; from db.co
 **Worker not processing tasks**:
 ```bash
 # Check worker logs
-docker logs rightmove_worker --tail 100
+docker logs worker --tail 100
 
 # Restart worker (note: use down/up to reload .env changes)
 docker-compose down celery_worker && docker-compose up -d celery_worker
@@ -614,7 +686,7 @@ redis-cli ping  # Should return PONG
 **Scraper worker fails immediately**:
 - Check if Playwright browsers are installed in container:
   ```bash
-  docker exec rightmove_worker playwright --version
+  docker exec worker playwright --version
   ```
 - If missing, rebuild container:
   ```bash
@@ -623,7 +695,7 @@ redis-cli ping  # Should return PONG
   ```
 - Check logs for specific errors:
   ```bash
-  docker logs rightmove_worker --follow
+  docker logs worker --follow
   ```
 
 **ModuleNotFoundError in worker**:
@@ -657,7 +729,7 @@ redis-cli ping  # Should return PONG
 **No emails received**:
 - Check spam/junk folder
 - Verify `NOTIFICATION_EMAILS` in `.env`
-- Check worker logs: `docker logs rightmove_worker --tail 50`
+- Check worker logs: `docker logs worker --tail 50`
 - Look for `[EMAIL-GMAIL] Sent to X recipients` confirmation
 
 ## Performance

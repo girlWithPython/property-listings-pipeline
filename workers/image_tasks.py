@@ -114,7 +114,7 @@ async def update_property_images_in_db(property_id: str, minio_keys: list):
         conn = await asyncpg.connect(
             host=DB_CONFIG.get('host', 'localhost'),
             port=DB_CONFIG.get('port', 5432),
-            database=DB_CONFIG.get('database', 'rightmove_scraper'),
+            database=DB_CONFIG.get('database', 'scraper'),
             user=DB_CONFIG.get('user', 'postgres'),
             password=DB_CONFIG.get('password', '12345')
         )

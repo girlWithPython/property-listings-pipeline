@@ -46,7 +46,7 @@ def main():
 
     else:
         # Trigger scraper
-        print("\nTriggering Rightmove scraper...")
+        print("\nTriggering scraper...")
         print("=" * 60)
         print("The scraper will:")
         print("  1. Scrape all enabled search URLs")
@@ -62,7 +62,7 @@ def main():
         print(f"  python trigger_scraper.py --status {task.id}")
 
         print("\nMonitor worker logs:")
-        print("  docker logs rightmove_worker --follow")
+        print("  docker logs worker --follow")
 
 
 if __name__ == '__main__':

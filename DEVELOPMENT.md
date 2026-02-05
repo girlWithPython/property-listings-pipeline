@@ -1,6 +1,6 @@
 # Development History
 
-This document chronicles the complete development history of the Rightmove Property Scraper project, from initial prototype to production-ready system.
+This document chronicles the complete development history of the Property Scraper project, from initial prototype to production-ready system.
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@ This document chronicles the complete development history of the Rightmove Prope
 
 ## Phase 1: Initial Prototype
 
-**Goal**: Create basic scraper to extract property data from Rightmove
+**Goal**: Create basic scraper to extract property data from the third-party property listing portal
 
 ### Implementation
 
@@ -41,7 +41,7 @@ This document chronicles the complete development history of the Rightmove Prope
 
 ### Challenges
 
-- Rightmove's dynamic JavaScript rendering required full browser
+- the third-party property listing portal's dynamic JavaScript rendering required full browser
 - Property details on separate pages (not in search results)
 - Rate limiting considerations
 
@@ -72,7 +72,7 @@ Changed to immutable snapshots:
 ```sql
 CREATE TABLE properties (
     id UUID PRIMARY KEY,  -- New UUID for each snapshot
-    property_id VARCHAR(50),  -- Rightmove ID (not unique)
+    property_id VARCHAR(50),  -- third-party property listing portal ID (not unique)
     price VARCHAR(100),
     status VARCHAR(200),
     created_at TIMESTAMP  -- When snapshot was taken
@@ -142,18 +142,18 @@ Centralized configuration with enable/disable:
 ```python
 SEARCH_URLS = [
     {
-        "url": "https://www.rightmove.co.uk/...",
+        "url": "https://www.example.com/...",
         "enabled": True,
         "description": "Guildford - 3+ beds, max £400k"
     },
     {
-        "url": "https://www.rightmove.co.uk/...",
+        "url": "https://www.example.com/...",
         "enabled": False,  # Can disable without deleting
         "description": "Reading - Rentals"
     },
 ]
 
-PAGE_SIZE = 24  # Rightmove default
+PAGE_SIZE = 24  # default number on the page
 MAX_PAGES = 50  # Maximum pages per search
 ```
 
@@ -435,7 +435,7 @@ Application → Redis (Message Broker) → Celery Workers
    ```python
    from celery import Celery
 
-   app = Celery('rightmove_scraper',
+   app = Celery('scraper',
                 broker='redis://localhost:6379/0',
                 backend='redis://localhost:6379/0')
 
@@ -491,7 +491,7 @@ Application → Redis (Message Broker) → Celery Workers
 
 ### Background
 
-Rightmove provides:
+The third-party property listing portal provides:
 - ✅ Latitude, longitude (approximate, ~100-500m accuracy)
 - ⚠️ Partial postcodes only (e.g., "KT19" not "KT19 9PR")
 - ❌ No county information
@@ -566,9 +566,9 @@ Rightmove provides:
 ### Challenges
 
 **Partial Postcodes**:
-- Rightmove shows "KT19" (outward code)
+- third-party property listing portal shows "KT19" (outward code)
 - Postcodes.io requires full postcode "KT19 9PR"
-- **Solution**: Use coordinates from Rightmove, get full postcode via reverse geocoding
+- **Solution**: Use coordinates from the third-party property listing portal, get full postcode via reverse geocoding
 
 **Rate Limiting**:
 - Postcodes.io: ~600 requests/minute
@@ -756,7 +756,7 @@ SMTP_USE_TLS=true
 NOTIFICATION_EMAILS=you@example.com,friend@example.com
 
 # Sender info
-FROM_NAME=Rightmove Property Scraper
+FROM_NAME=Property Scraper
 ```
 
 **Docker Integration** (`docker-compose.yml`):
@@ -974,7 +974,7 @@ celery -A workers.celery_app beat --loglevel=info
 # Trigger scraper (geocoding happens automatically)
 $ python trigger_scraper.py
 
-Triggering Rightmove scraper...
+Triggering the scraper...
 ============================================================
 The scraper will:
   1. Scrape all enabled search URLs
@@ -990,7 +990,7 @@ To check status, run:
   python trigger_scraper.py --status abc123-def456-ghi789
 
 Monitor worker logs:
-  docker logs rightmove_worker --follow
+  docker logs worker --follow
 ```
 
 ---
@@ -1357,7 +1357,7 @@ Found 24 unique properties for this search
 
 **Example problematic URL**:
 ```
-https://www.rightmove.co.uk/property-for-sale/find.html?...&index=0&index=24
+https://www.example.com/.../find.html?...&index=0&index=24
                                                             ^^^^^^^ ^^^^^^^^
                                                             from URL  from code
 ```
@@ -1414,7 +1414,7 @@ except:
 
 **Statistics**:
 - ✅ **Total pages scraped**: 13
-- ✅ **Total properties found**: 291 (matches Rightmove website exactly)
+- ✅ **Total properties found**: 291 (matches third-party property listing portal website exactly)
 - ✅ **Success rate**: 100%
 
 ### Benefits
@@ -1463,7 +1463,7 @@ Tested with multiple search URLs:
 ### Problem Identified
 
 **Missing Property Data**:
-The scraper only captured basic fields (price, bedrooms, address, property_type, description) but Rightmove property pages contain much more valuable information:
+The scraper only captured basic fields (price, bedrooms, address, property_type, description) but the portal's property pages may contain much more valuable information:
 - Bathrooms count
 - Date property was added
 - Date price was reduced
@@ -1816,7 +1816,7 @@ WHERE added_on >= '01/02/2026';
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     RIGHTMOVE PROPERTY SCRAPER                  │
+│                     PROPERTY SCRAPER                  │
 │                         Production Ready                        │
 └─────────────────────────────────────────────────────────────────┘
 
@@ -1945,7 +1945,7 @@ services:
 ### Known Issues
 
 1. **Partial Postcodes**:
-   - Rightmove shows outward code only (e.g., "KT19")
+   - third-party property listing portal may show outward code only (e.g., "KT19")
    - ✅ Solution implemented: Use coordinates for reverse geocoding
 
 2. **Legacy Columns**:
@@ -2042,7 +2042,7 @@ services:
    - Celery is synchronous
    - Solution: nest_asyncio bridge
 
-2. **Rightmove data limitations**:
+2. **third-party property listing portal common data limitations**:
    - Partial postcodes only
    - Solution: Reverse geocoding from coordinates
 
@@ -2488,7 +2488,7 @@ This ensures only **one entry per (name, place_type)** when `parent_id IS NULL`.
 
 ## Conclusion
 
-The Rightmove Property Scraper has evolved from a simple prototype to a production-ready system with:
+The Property Scraper pipeline is evolving from a simple prototype to a production-ready system with:
 
 - Comprehensive data tracking (snapshots)
 - Normalized geographic hierarchy

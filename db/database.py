@@ -11,7 +11,7 @@ class DatabaseConnector:
         self,
         host: str = "localhost",
         port: int = 5432,
-        database: str = "rightmove_scraper",
+        database: str = "scraper",
         user: str = "postgres",
         password: str = "12345"
     ):

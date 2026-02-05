@@ -153,13 +153,13 @@ docker-compose down celery_worker && docker-compose up -d celery_worker
 docker-compose build celery_worker && docker-compose down celery_worker && docker-compose up -d celery_worker
 
 # Check logs
-docker logs rightmove_worker --tail 50 --follow
+docker logs worker --tail 50 --follow
 
 # Verify mounts
-docker inspect rightmove_worker --format='{{range .Mounts}}{{.Source}} -> {{.Destination}}{{println}}{{end}}'
+docker inspect worker --format='{{range .Mounts}}{{.Source}} -> {{.Destination}}{{println}}{{end}}'
 
 # Test code is live
-docker exec rightmove_worker cat /app/scraper/search_urls.py
+docker exec worker cat /app/scraper/search_urls.py
 ```
 
 ---
@@ -169,7 +169,7 @@ docker exec rightmove_worker cat /app/scraper/search_urls.py
 ### Check if Volumes Are Mounted
 
 ```bash
-docker inspect rightmove_worker --format='{{range .Mounts}}{{.Source}} -> {{.Destination}} ({{.Mode}}){{println}}{{end}}'
+docker inspect worker --format='{{range .Mounts}}{{.Source}} -> {{.Destination}} ({{.Mode}}){{println}}{{end}}'
 ```
 
 **Expected output**:
@@ -185,14 +185,14 @@ C:\Users\...\movePaser\db -> /app/db (ro)
 
 ```bash
 # 1. Check current search URLs in container
-docker exec rightmove_worker head -20 /app/scraper/search_urls.py
+docker exec worker head -20 /app/scraper/search_urls.py
 
 # 2. Edit search_urls.py on host
 nano scraper/search_urls.py
 # Add a comment at the top: # TEST CHANGE
 
 # 3. Check again in container (should see change immediately)
-docker exec rightmove_worker head -20 /app/scraper/search_urls.py
+docker exec worker head -20 /app/scraper/search_urls.py
 
 # 4. Restart worker
 docker-compose restart celery_worker
@@ -209,10 +209,10 @@ If you see your changes in step 3, volume mounting is working! ✅
 **Check**:
 ```bash
 # 1. Verify volumes are mounted
-docker inspect rightmove_worker | grep Mounts -A 20
+docker inspect worker | grep Mounts -A 20
 
 # 2. Check file in container
-docker exec rightmove_worker cat /app/scraper/search_urls.py
+docker exec worker cat /app/scraper/search_urls.py
 
 # 3. Compare with host file
 cat scraper/search_urls.py
@@ -246,7 +246,7 @@ If you need to write from container (rare), change in docker-compose.yml:
 **Check**:
 ```bash
 # View startup errors
-docker logs rightmove_worker
+docker logs worker
 ```
 
 **Common causes**:

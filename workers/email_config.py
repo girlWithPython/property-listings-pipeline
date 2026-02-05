@@ -38,7 +38,7 @@ if GMAIL_ADDRESS and GMAIL_APP_PASSWORD and not SMTP_HOST:
 
 # ===== Common Email Settings =====
 FROM_EMAIL = os.getenv('FROM_EMAIL', SMTP_USERNAME or 'noreply@example.com')
-FROM_NAME = os.getenv('FROM_NAME', 'Rightmove Property Scraper')
+FROM_NAME = os.getenv('FROM_NAME', 'third-party property listing portal Property Scraper')
 
 # Notification recipients (comma-separated)
 NOTIFICATION_EMAILS = os.getenv('NOTIFICATION_EMAILS', '').split(',') if os.getenv('NOTIFICATION_EMAILS') else []

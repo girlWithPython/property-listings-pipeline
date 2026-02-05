@@ -1,5 +1,5 @@
 """
-Scraper worker tasks - Run Rightmove scraper with automatic geocoding
+Scraper worker tasks - Run third-party property listing portal scraper with automatic geocoding
 """
 import asyncio
 from workers.celery_app import app
@@ -9,7 +9,7 @@ from workers.geocoding import reverse_geocode_missing_postcodes
 @app.task(name='workers.scraper_tasks.run_scraper', bind=True)
 def run_scraper(self):
     """
-    Run the Rightmove scraper as a background task.
+    Run the third-party property listing portal scraper as a background task.
 
     Automatically triggers reverse geocoding after scraping completes.
 
@@ -21,7 +21,7 @@ def run_scraper(self):
             - total_errors: Errors encountered
             - geocoding_task_id: ID of the geocoding task triggered
     """
-    print("[SCRAPER WORKER] Starting Rightmove scraper...")
+    print("[SCRAPER WORKER] Starting third-party property listing portal scraper...")
 
     async def _run_scraper():
         """Run the scraper main function"""

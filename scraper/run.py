@@ -14,7 +14,7 @@ BROWSER_RESTART_INTERVAL = 75  # Restart after processing this many properties
 
 def extract_town_from_url(url: str) -> str:
     """
-    Extract town name from Rightmove search URL
+    Extract town name from the third-party property listing portal search URL
     """
     try:
         parsed = urlparse(url)
@@ -92,7 +92,7 @@ async def collect_property_links(page, base_url, page_size=24, max_pages=50):
 
             if "/properties/" in href:
                 clean = href.split("#")[0].split("?")[0]
-                property_links.add("https://www.rightmove.co.uk" + clean)
+                property_links.add("https://www.example.com" + clean)
 
         after = len(property_links)
         print(f"  [Page {page_num + 1}] New properties found: {after - before}")
@@ -224,7 +224,7 @@ async def main():
         return
 
     print("\n" + "=" * 80)
-    print("RIGHTMOVE SCRAPER - MULTI-URL MODE")
+    print("SCRAPER - MULTI-URL MODE")
     print("=" * 80)
     print(f"Total search URLs to process: {total_searches}")
     for i, config in enumerate(search_configs, 1):

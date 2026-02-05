@@ -480,11 +480,11 @@ async def extract_property_details(page, url):
 
         print(f"[DEBUG] Meta image URL: {url[:80]}...")
 
-        # Accept all images from media.rightmove.co.uk
+        # Accept all images from media.example.co.uk
         # This includes both patterns:
-        # - https://media.rightmove.co.uk/property-photo/...
-        # - https://media.rightmove.co.uk/58k/57607/169356884/...
-        if "media.rightmove.co.uk" in url and url.endswith(('.jpeg', '.jpg', '.png')):
+        # - https://media.example.com/id/...
+        # - https://media.example.com/id/...
+        if "media.example.com" in url and url.endswith(('.jpeg', '.jpg', '.png')):
             full_images.append(url)
 
     print(f"[DEBUG] Captured {len(full_images)} full images")

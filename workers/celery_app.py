@@ -9,7 +9,7 @@ REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 
 # Create Celery app
 app = Celery(
-    'rightmove_workers',
+    'workers',
     broker=REDIS_URL,
     backend=REDIS_URL,
     include=[

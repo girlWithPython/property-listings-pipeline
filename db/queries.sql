@@ -1,4 +1,4 @@
--- Database queries for rightmove_scraper (Snapshot Approach)
+-- Database queries for scraper (Snapshot Approach)
 
 -- ========================================
 -- LATEST SNAPSHOTS (Current State)

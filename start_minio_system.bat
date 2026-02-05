@@ -1,6 +1,6 @@
 @echo off
 echo ================================================
-echo  Rightmove Scraper - MinIO System Startup
+echo  Scraper - MinIO System Startup
 echo ================================================
 echo.
 

@@ -1,5 +1,5 @@
 @echo off
-echo Creating PostgreSQL database 'rightmove_scraper'...
+echo Creating PostgreSQL database 'scraper'...
 echo.
 
 REM Try common PostgreSQL installation paths
@@ -19,7 +19,7 @@ if %PSQL_PATH%=="" (
     echo ERROR: PostgreSQL not found in common installation paths
     echo Please run this command manually in psql or pgAdmin:
     echo.
-    echo     CREATE DATABASE rightmove_scraper;
+    echo     CREATE DATABASE scraper;
     echo.
     pause
     exit /b 1
@@ -29,11 +29,11 @@ echo Found PostgreSQL at: %PSQL_PATH%
 echo.
 
 REM Create the database
-%PSQL_PATH% -U postgres -c "CREATE DATABASE rightmove_scraper;"
+%PSQL_PATH% -U postgres -c "CREATE DATABASE scraper;"
 
 if %ERRORLEVEL% EQU 0 (
     echo.
-    echo SUCCESS: Database 'rightmove_scraper' created!
+    echo SUCCESS: Database 'scraper' created!
     echo You can now run: python -m scraper.run
 ) else (
     echo.
