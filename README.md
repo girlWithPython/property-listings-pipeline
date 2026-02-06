@@ -1,6 +1,7 @@
 # Property Listings Pipeline
 
-This project is an end-to-end **ELT pipeline** for property listing data: it extracts listing records from a third-party public portal, loads them into PostgreSQL, enriches them via external APIs, and produces **snapshoted, analytics-ready** tables for reporting and monitoring.
+This project is an end-to-end **ELT pipeline** that extracts property listing records from a third-party public portal, loads them into PostgreSQL, enriches location data via external APIs, and produces **analytics-ready** datasets for reporting and monitoring.
+It follows common data engineering practices: raw ingestion with idempotent loads, curated tables for BI, and an **append-only change log** that captures only detected deltas (new listings, price/status updates, removals). The pipeline runs in Docker for reproducibility and supports Power BI dashboards and automated notifications when key fields change.
 
 ## Architecture
 
